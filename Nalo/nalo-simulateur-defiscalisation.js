@@ -31,6 +31,23 @@ Webflow.push(function () {
     "Veuillez corriger les champs en rouge sur les différentes étapes.";
 
   /**************  FUNCTIONS **************/
+  function format_result(number_val) {
+    console.log("formatRes : 0 " + number_val);
+    if (number_val % 1 === 0) {
+      // Check if the number is an integer
+      number_val = number_val.toFixed(0); // Remove decimal point and trailing zeros
+      console.log("formatRes : int " + number_val);
+    } else {
+      number_val = number_val.toFixed(2);
+      console.log("formatRes : float " + number_val);
+    }
+    number_val = String(number_val).replace(".", ","); // Replace '.' with ',' in the string
+    console.log("formatRes : nopoint " + number_val);
+    number_val = number_val.replace(/\B(?=(\d{3})+(?!\d))/g, " "); // Add a space every 3 digits
+    console.log("formatRes : space thousands " + number_val);
+    return number_val;
+  }
+
   ////// Form Field validation
   function form_field_badinput(field_elt, field_error_text, isbad) {
     const field_tip = field_elt.parentNode.querySelector(
@@ -65,6 +82,21 @@ Webflow.push(function () {
     max_val_accepted,
     val_unit
   ) {
+    field_val = field_val.replaceAll(" ", "");
+    let nb_isDigit = isDigit(field_val);
+    if (!nb_isDigit) {
+      form_field_badinput(
+        field_elt,
+        "Ce champ doit être un nombre compris entre " +
+          min_val_accepted +
+          val_unit +
+          " et " +
+          max_val_accepted +
+          val_unit +
+          ".",
+        true
+      );
+    }
     if (field_val < min_val_accepted || field_val > max_val_accepted) {
       form_field_badinput(
         field_elt,
@@ -78,8 +110,10 @@ Webflow.push(function () {
         true
       );
       return false;
-    } else if (isDigit(field_val)) {
-      field_elt.value = parseFloat(field_val);
+    } else if (nb_isDigit) {
+      console.log("initial value " + field_val);
+      field_elt.value = format_result(parseFloat(field_val));
+      console.log("new value " + field_elt.value);
       form_field_badinput(field_elt, "", false);
       return true;
     }
@@ -228,16 +262,10 @@ Webflow.push(function () {
     return tax_advantage;
   }
 
-  function format_result(number_val) {
-    if (number_val % 1 === 0) {
-      // Check if the number is an integer
-      number_val = number_val.toFixed(0); // Remove decimal point and trailing zeros
-    } else {
-      number_val = number_val.toFixed(2);
-    }
-    number_val = String(number_val).replace(".", ","); // Replace '.' with ',' in the string
-    return number_val.replace(/\B(?=(\d{3})+(?!\d))/g, " "); // Add a space every 3 digits
+  function retrieve_number_value(nb_val) {
+    return parseInt(nb_val.replaceAll(" ", ""), 10);
   }
+
   /*********************** MAIN *********************/
   let yearly_household_income,
     number_adults,
@@ -290,13 +318,14 @@ Webflow.push(function () {
         form_main_error(false);
 
         // Retrieving the values of the different inputs
-        yearly_household_income = parseInt(
-          yearly_household_income_field.value,
-          10
+        yearly_household_income = retrieve_number_value(
+          yearly_household_income_field.value
         );
-        number_adults = parseInt(number_adults_field.value, 10);
-        number_children = parseInt(number_children_field.value, 10);
-        subscription_amount = parseInt(subscription_amount_field.value, 10);
+        number_adults = retrieve_number_value(number_adults_field.value);
+        number_children = retrieve_number_value(number_children_field.value);
+        subscription_amount = retrieve_number_value(
+          subscription_amount_field.value
+        );
 
         // Computing the result of Tax advantage
         per_tax_advantage = compute_PER_tax_advantage_given_amount(
@@ -314,14 +343,14 @@ Webflow.push(function () {
 
         // Submitting the form
         simulation_form.querySelector('input[type="submit"]').click();
-        setTimeout(() => {
+        /*setTimeout(() => {
           document.querySelector("html").scrollTo({
             top: 0,
             left: 0,
             behavior: "smooth"
           });
           //$("html").animate({ scrollTop: 0 }, 300);
-        }, 500);
+        }, 1000);*/
 
         /**/
       }
